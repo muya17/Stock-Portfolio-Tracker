@@ -1,0 +1,20 @@
+# Generated files
+portfolio.csv
+portfolio_tracker.exe
+
+# VS Code files with sensitive data
+.vscode/launch.json
+
+# Optional: Other VS Code settings (uncomment if you don't want to share them)
+#.vscode/
+
+# Build artifacts and temporary files
+*.o
+*.obj
+*.exe
+*.pdb
+*.ilk
+
+# macOS and Linux artifacts
+.DS_Store
+*.swp
