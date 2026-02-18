@@ -23,6 +23,21 @@ map<string, pair<double, time_t>> priceCache; // Cache for stock prices
 
 double parseStockPrice(const string& json) {
     cout << "API Response: " << json << endl; // Debug: Print raw response
+    
+    // Check for API error responses
+    if (json.find("Error Message") != string::npos) {
+        cout << "Error: API returned error message" << endl;
+        return -1.0;
+    }
+    if (json.find("Invalid API call") != string::npos) {
+        cout << "Error: Invalid API call" << endl;
+        return -1.0;
+    }
+    if (json.find("Information") != string::npos && json.find("rate limit") != string::npos) {
+        cout << "Error: API rate limit exceeded. Please wait before requesting again." << endl;
+        return -1.0;
+    }
+    
     string priceKey = "\"05. price\": \"";
     size_t start = json.find(priceKey);
     if (start == string::npos) {
@@ -36,9 +51,14 @@ double parseStockPrice(const string& json) {
         return -1.0;
     }
     try {
-        return stod(json.substr(start, end - start));
-    } catch (...) {
-        cout << "Error: Failed to parse price" << endl;
+        double price = stod(json.substr(start, end - start));
+        if (price <= 0) {
+            cout << "Error: Invalid price value (must be positive)" << endl;
+            return -1.0;
+        }
+        return price;
+    } catch (const exception& e) {
+        cout << "Error: Failed to parse price - " << e.what() << endl;
         return -1.0;
     }
 }

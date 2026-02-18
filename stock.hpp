@@ -57,14 +57,24 @@ void loadPortfolio(vector<Stock>& portfolio) {
         double purchasePrice;
         string temp;
 
-        getline(ss, symbol, ',');
-        getline(ss, temp, ',');
-        quantity = stoi(temp);
-        getline(ss, temp);
-        purchasePrice = stod(temp);
+        try {
+            getline(ss, symbol, ',');
+            getline(ss, temp, ',');
+            quantity = stoi(temp);
+            getline(ss, temp);
+            purchasePrice = stod(temp);
 
-        portfolio.emplace_back(symbol, quantity, purchasePrice);
-        cout << "Loaded: " << symbol << "," << quantity << "," << purchasePrice << endl;
+            if (quantity <= 0 || purchasePrice < 0) {
+                cout << "Warning: Skipping invalid entry - " << symbol << "," << quantity << "," << purchasePrice << endl;
+                continue;
+            }
+
+            portfolio.emplace_back(symbol, quantity, purchasePrice);
+            cout << "Loaded: " << symbol << "," << quantity << "," << purchasePrice << endl;
+        } catch (const exception& e) {
+            cout << "Error: Failed to parse CSV line: " << line << " (" << e.what() << ")" << endl;
+            continue;
+        }
     }
     file.close();
 }

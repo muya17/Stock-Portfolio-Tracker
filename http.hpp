@@ -22,6 +22,15 @@ string httpGet(const string& url) {
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
         curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L); // Enable verbose output
+        
+        // SSL/TLS Configuration for HTTPS (Linux/WSL with system CA certificates)
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L); // Enable SSL verification
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L); // Verify hostname
+        
+        // Set timeout to 10 seconds
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
+        
         CURLcode res = curl_easy_perform(curl);
         if (res != CURLE_OK) {
             cout << "libcurl error: " << curl_easy_strerror(res) << endl;

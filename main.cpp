@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cctype>
 #include "stock.hpp"
 #include "api.hpp"
 
@@ -31,6 +32,31 @@ int main() {
 
             cout << "Enter stock symbol (e.g., AAPL): ";
             getline(cin, symbol);
+            
+            // Validate and sanitize stock symbol
+            if (symbol.empty() || symbol.length() > 5) {
+                cout << "Invalid symbol. Must be 1-5 characters.\n";
+                continue;
+            }
+            
+            // Convert to uppercase
+            for (char& c : symbol) {
+                c = toupper(c);
+            }
+            
+            // Check if symbol contains only letters
+            bool validSymbol = true;
+            for (char c : symbol) {
+                if (!isalpha(c)) {
+                    validSymbol = false;
+                    break;
+                }
+            }
+            if (!validSymbol) {
+                cout << "Invalid symbol. Must contain only letters.\n";
+                continue;
+            }
+            
             cout << "Enter quantity: ";
             cin >> quantity;
             cout << "Enter purchase price: ";
