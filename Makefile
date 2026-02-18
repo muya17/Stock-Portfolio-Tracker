@@ -1,7 +1,7 @@
 # Makefile for Stock Portfolio Tracker (Linux/WSL)
 
 CXX = g++
-CXXFLAGS = -std=c++11 -Wall -g
+CXXFLAGS = -std=c++17 -Wall -g
 LDFLAGS = -lcurl
 
 TARGET = portfolio_tracker

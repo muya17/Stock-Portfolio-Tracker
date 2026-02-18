@@ -1,5 +1,6 @@
 # Generated files
 portfolio.csv
+transactions.csv
 portfolio_tracker.exe
 
 # VS Code files with sensitive data
@@ -17,4 +18,5 @@ portfolio_tracker.exe
 
 # macOS and Linux artifacts
 .DS_Store
-*.swpportfolio_tracker
+*.swp
+portfolio_tracker
