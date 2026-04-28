@@ -9,12 +9,51 @@
 #include <iomanip>
 #include <map>
 #include <ctime>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
 #include "api.hpp"
 
 using namespace std;
 
 // Forward declaration to avoid include issues
 double getStockPrice(const string& symbol, time_t& lastFetched);
+
+// Get the data directory path (~/.stock-tracker/)
+inline string getDataDirectory() {
+    const char* homeDir = nullptr;
+    
+    // Try to get home directory from environment variable
+    homeDir = getenv("HOME");
+    
+    // If HOME is not set, get it from passwd
+    if (homeDir == nullptr) {
+        struct passwd* pw = getpwuid(getuid());
+        if (pw != nullptr) {
+            homeDir = pw->pw_dir;
+        }
+    }
+    
+    if (homeDir == nullptr) {
+        // Fallback to current directory
+        return "./";
+    }
+    
+    string dataDir = string(homeDir) + "/.stock-tracker/";
+    
+    // Create directory if it doesn't exist
+    struct stat st;
+    if (stat(dataDir.c_str(), &st) != 0) {
+        mkdir(dataDir.c_str(), 0755);
+    }
+    
+    return dataDir;
+}
+
+// Get the transactions file path
+inline string getTransactionsFilePath() {
+    return getDataDirectory() + "transactions.csv";
+}
 
 // Transaction class for logging buy/sell actions
 class Transaction {
@@ -43,7 +82,7 @@ public:
 };
 
 // Get current date as string
-string getCurrentDate() {
+inline string getCurrentDate() {
     time_t now = time(nullptr);
     char buffer[11];
     strftime(buffer, sizeof(buffer), "%Y-%m-%d", localtime(&now));
@@ -51,13 +90,14 @@ string getCurrentDate() {
 }
 
 // Log a transaction to transactions.csv
-void logTransaction(const string& action, const string& symbol, int quantity, double price) {
-    ofstream file("transactions.csv", ios::app);
+inline void logTransaction(const string& action, const string& symbol, int quantity, double price) {
+    string filePath = getTransactionsFilePath();
+    ofstream file(filePath, ios::app);
     if (!file.is_open()) {
         // Create new file with header
-        file.open("transactions.csv");
+        file.open(filePath);
         if (!file.is_open()) {
-            cout << "Error: Cannot create transactions.csv" << endl;
+            cout << "Error: Cannot create " << filePath << endl;
             return;
         }
         file << "Date,Action,Symbol,Quantity,Price\n";
@@ -70,14 +110,15 @@ void logTransaction(const string& action, const string& symbol, int quantity, do
 }
 
 // Load all transactions
-vector<Transaction> loadTransactions() {
+inline vector<Transaction> loadTransactions() {
     vector<Transaction> transactions;
-    ifstream file("transactions.csv");
+    string filePath = getTransactionsFilePath();
+    ifstream file(filePath);
     
     if (!file.is_open()) {
-        cout << "No transactions.csv found, starting fresh" << endl;
+        cout << "No transactions file found at " << filePath << ", starting fresh" << endl;
         // Create the file with header
-        ofstream newFile("transactions.csv");
+        ofstream newFile(filePath);
         newFile << "Date,Action,Symbol,Quantity,Price\n";
         newFile.close();
         return transactions;
@@ -112,7 +153,7 @@ vector<Transaction> loadTransactions() {
 }
 
 // Aggregate transactions into portfolio holdings
-vector<Stock> aggregatePortfolio(const vector<Transaction>& transactions) {
+inline vector<Stock> aggregatePortfolio(const vector<Transaction>& transactions) {
     map<string, pair<int, double>> holdings; // symbol -> (quantity, total cost)
     
     for (const auto& txn : transactions) {
@@ -141,7 +182,7 @@ vector<Stock> aggregatePortfolio(const vector<Transaction>& transactions) {
 }
 
 // Display portfolio with proper formatting
-void displayPortfolio(vector<Stock>& portfolio) {
+inline void displayPortfolio(vector<Stock>& portfolio) {
     if (portfolio.empty()) {
         cout << "\nPortfolio is empty. Buy some stocks first!\n";
         return;

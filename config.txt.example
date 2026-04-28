@@ -1,0 +1,11 @@
+# Stock Portfolio Tracker Configuration
+# Copy this file to config.txt or ~/.stock-tracker/config.txt and add your API key
+
+# Alpha Vantage API Key
+# Get a free key from: https://www.alphavantage.co/support/#api-key
+API_KEY=your-api-key-here
+
+# Note: The app will check for API key in this order:
+# 1. ALPHA_VANTAGE_API_KEY environment variable
+# 2. ~/.stock-tracker/config.txt
+# 3. config.txt (in project directory)

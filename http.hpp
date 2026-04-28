@@ -8,12 +8,12 @@
 
 using namespace std;
 
-size_t writeCallback(void* contents, size_t size, size_t nmemb, string* userp) {
+inline size_t writeCallback(void* contents, size_t size, size_t nmemb, string* userp) {
     userp->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
-string httpGet(const string& url) {
+inline string httpGet(const string& url) {
     CURL* curl = curl_easy_init();
     string response;
 
