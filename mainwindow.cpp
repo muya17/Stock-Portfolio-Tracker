@@ -2,6 +2,8 @@
 #include <QGroupBox>
 #include <QFont>
 #include <QHeaderView>
+#include <QStringList>
+#include <QSet>
 #include <iomanip>
 #include <sstream>
 
@@ -106,11 +108,67 @@ void MainWindow::setupUI() {
 
 void MainWindow::buyStock() {
     bool ok;
-    QString symbol = QInputDialog::getText(this, "Buy Stock", "Enter stock symbol (e.g., AAPL):", QLineEdit::Normal, "", &ok);
+    QStringList popularSymbols = {
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",
+        "TSLA", "META", "NFLX", "AMD", "INTC",
+        "JPM", "V", "MA", "WMT", "KO"
+    };
+
+    QString query = QInputDialog::getText(
+        this,
+        "Find Stock",
+        "Search by company name or symbol (optional):",
+        QLineEdit::Normal,
+        "",
+        &ok
+    );
+    if (!ok) return;
+
+    query = query.trimmed();
+
+    QStringList symbolOptions = popularSymbols;
+    QSet<QString> seenSymbols;
+    for (const QString& item : popularSymbols) {
+        seenSymbols.insert(item);
+    }
+
+    if (!query.isEmpty()) {
+        std::vector<std::pair<std::string, std::string>> matches =
+            searchStockSymbols(query.toStdString(), 10);
+
+        for (const auto& match : matches) {
+            QString matchSymbol = QString::fromStdString(match.first).trimmed().toUpper();
+            if (matchSymbol.isEmpty() || seenSymbols.contains(matchSymbol)) {
+                continue;
+            }
+
+            QString matchName = QString::fromStdString(match.second).trimmed();
+            QString option = matchSymbol;
+            if (!matchName.isEmpty()) {
+                option += " - " + matchName;
+            }
+
+            symbolOptions.append(option);
+            seenSymbols.insert(matchSymbol);
+        }
+    }
+
+    QString symbol = QInputDialog::getItem(
+        this,
+        "Buy Stock",
+        "Select stock symbol (or type your own):",
+        symbolOptions,
+        0,
+        true,
+        &ok
+    );
     
     if (!ok || symbol.isEmpty()) return;
     
-    symbol = symbol.toUpper();
+    if (symbol.contains(" - ")) {
+        symbol = symbol.section(" - ", 0, 0);
+    }
+    symbol = symbol.trimmed().toUpper();
     
     // Validate symbol
     if (symbol.length() > 5) {
@@ -146,11 +204,69 @@ void MainWindow::buyStock() {
 
 void MainWindow::sellStock() {
     bool ok;
-    QString symbol = QInputDialog::getText(this, "Sell Stock", "Enter stock symbol (e.g., AAPL):", QLineEdit::Normal, "", &ok);
-    
+    QStringList ownedOptions;
+    QSet<QString> seenSymbols;
+
+    for (const auto& stock : portfolio) {
+        if (stock.quantity > 0) {
+            QString ownedSymbol = QString::fromStdString(stock.symbol).trimmed().toUpper();
+            if (!ownedSymbol.isEmpty() && !seenSymbols.contains(ownedSymbol)) {
+                ownedOptions.append(ownedSymbol + " - Owned: " + QString::number(stock.quantity));
+                seenSymbols.insert(ownedSymbol);
+            }
+        }
+    }
+
+    QString query = QInputDialog::getText(
+        this,
+        "Find Stock to Sell",
+        "Search by company name or symbol (optional):",
+        QLineEdit::Normal,
+        "",
+        &ok
+    );
+    if (!ok) return;
+
+    query = query.trimmed();
+
+    QStringList symbolOptions = ownedOptions;
+    if (!query.isEmpty()) {
+        std::vector<std::pair<std::string, std::string>> matches =
+            searchStockSymbols(query.toStdString(), 10);
+
+        for (const auto& match : matches) {
+            QString matchSymbol = QString::fromStdString(match.first).trimmed().toUpper();
+            if (matchSymbol.isEmpty() || seenSymbols.contains(matchSymbol)) {
+                continue;
+            }
+
+            QString matchName = QString::fromStdString(match.second).trimmed();
+            QString option = matchSymbol;
+            if (!matchName.isEmpty()) {
+                option += " - " + matchName;
+            }
+
+            symbolOptions.append(option);
+            seenSymbols.insert(matchSymbol);
+        }
+    }
+
+    QString symbol = QInputDialog::getItem(
+        this,
+        "Sell Stock",
+        "Select stock symbol (or type your own):",
+        symbolOptions,
+        0,
+        true,
+        &ok
+    );
+
     if (!ok || symbol.isEmpty()) return;
-    
-    symbol = symbol.toUpper();
+
+    if (symbol.contains(" - ")) {
+        symbol = symbol.section(" - ", 0, 0);
+    }
+    symbol = symbol.trimmed().toUpper();
     
     // Check if user owns this stock
     bool found = false;

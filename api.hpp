@@ -5,6 +5,7 @@
 #include <cstring>
 #include <ctime>
 #include <map>
+#include <vector>
 #include <iostream>
 #include <cstdlib>
 #include <fstream>
@@ -169,6 +170,87 @@ inline double getStockPrice(const string& symbol, time_t& lastFetched) {
         lastFetched = now;
     }
     return price;
+}
+
+inline string urlEncode(const string& value) {
+    static const char* hex = "0123456789ABCDEF";
+    string encoded;
+    encoded.reserve(value.size() * 3);
+
+    for (unsigned char c : value) {
+        if ((c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') ||
+            c == '-' || c == '_' || c == '.' || c == '~') {
+            encoded += static_cast<char>(c);
+        } else {
+            encoded += '%';
+            encoded += hex[(c >> 4) & 0x0F];
+            encoded += hex[c & 0x0F];
+        }
+    }
+
+    return encoded;
+}
+
+inline vector<pair<string, string>> searchStockSymbols(const string& keywords, size_t maxResults = 10) {
+    vector<pair<string, string>> matches;
+
+    if (keywords.empty() || API_KEY.empty()) {
+        return matches;
+    }
+
+    string url = "https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=" +
+                 urlEncode(keywords) + "&apikey=" + API_KEY;
+    string response = httpGet(url);
+    if (response.empty()) {
+        return matches;
+    }
+
+    if (response.find("Error Message") != string::npos ||
+        response.find("Invalid API call") != string::npos ||
+        (response.find("Information") != string::npos && response.find("rate limit") != string::npos)) {
+        return matches;
+    }
+
+    size_t pos = 0;
+    const string symbolKey = "\"1. symbol\": \"";
+    const string nameKey = "\"2. name\": \"";
+
+    while (matches.size() < maxResults) {
+        size_t symbolPos = response.find(symbolKey, pos);
+        if (symbolPos == string::npos) {
+            break;
+        }
+        symbolPos += symbolKey.length();
+        size_t symbolEnd = response.find('"', symbolPos);
+        if (symbolEnd == string::npos) {
+            break;
+        }
+
+        string symbol = response.substr(symbolPos, symbolEnd - symbolPos);
+
+        size_t namePos = response.find(nameKey, symbolEnd);
+        string name;
+        if (namePos != string::npos) {
+            namePos += nameKey.length();
+            size_t nameEnd = response.find('"', namePos);
+            if (nameEnd != string::npos) {
+                name = response.substr(namePos, nameEnd - namePos);
+                pos = nameEnd;
+            } else {
+                pos = symbolEnd;
+            }
+        } else {
+            pos = symbolEnd;
+        }
+
+        if (!symbol.empty()) {
+            matches.push_back({symbol, name});
+        }
+    }
+
+    return matches;
 }
 
 #endif
