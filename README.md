@@ -255,3 +255,4 @@ Contributions and suggestions are welcome via GitHub issues or pull requests!
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
+
